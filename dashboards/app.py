@@ -156,3 +156,12 @@ with tab5:
 with tab6:
     st.subheader("📄 Full Data Table")
     st.dataframe(filtered, use_container_width=True)
+
+    # Download CSV
+    csv = filtered.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="📥 Download Full CSV",
+        data=csv,
+        file_name="weather_energy_data.csv",
+        mime="text/csv",
+    )
