@@ -1,0 +1,18 @@
+{
+  "missing_values": {
+    "date": 0,
+    "city": 0,
+    "avg_temp_f": 0,
+    "temp_delta_f": 0,
+    "energy_consumption": 0
+  },
+  "outliers": {
+    "temperature_outliers": 0,
+    "negative_energy_readings": 1504
+  },
+  "freshness": {
+    "latest_date": "2025-07-13",
+    "is_fresh": false,
+    "days_old": 4
+  }
+}
