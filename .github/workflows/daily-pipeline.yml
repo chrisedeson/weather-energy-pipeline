@@ -33,6 +33,9 @@ jobs:
       - name: Run Quality Check
         run: python src/data_quality.py
 
+      - name: Run Anomaly Detection
+        run: python src/anomaly_detection.py
+
       - name: Commit updated data files
         run: |
           git config --global user.name "github-actions[bot]"
