@@ -57,8 +57,12 @@ ENV/
 env.bak/
 venv.bak/
 
-# Data files
-data/
+# Ignore everything inside data/
+data/*
+
+# But keep these files
+!data/merged_data.csv
+!data/quality_report.json
 
 # Log files
 logs/
