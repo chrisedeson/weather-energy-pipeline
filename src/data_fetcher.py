@@ -62,3 +62,44 @@ def fetch_weather_data(city_config, start_date, end_date):
     df["city"] = city_name
 
     return df
+
+def fetch_energy_data(city_config, start_date, end_date):
+    region_code = city_config["eia_region_code"]
+    city_name = city_config["name"]
+
+    logger.info(f"Fetching energy data for {city_name} ({region_code})")
+
+    url = "https://api.eia.gov/v2/electricity/rto/daily-region-data/data/"
+    params = {
+        "api_key": api_keys["EIA"],
+        "data[]": "value",
+        "facets[respondent][]": region_code,
+        "start": start_date,
+        "end": end_date,
+        "frequency": "daily"
+    }
+
+    retries = 3
+    data = []
+
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()["response"]["data"]
+            break
+        except Exception as e:
+            logger.warning(f"Attempt {attempt+1} failed for {city_name} energy: {e}")
+            time.sleep(2 * (attempt + 1))
+
+    if not data:
+        logger.error(f"Failed to fetch energy data for {city_name}")
+        return None
+
+    # Convert to DataFrame
+    df = pd.DataFrame(data)
+    df["period"] = pd.to_datetime(df["period"].str[:10])
+    df = df.rename(columns={"period": "date", "value": "energy_mwh"})
+    df["city"] = city_name
+
+    return df
