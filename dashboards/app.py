@@ -39,11 +39,12 @@ filtered = df[df["city"].isin(selected_cities)]
 st.title("🔌 US Weather + Energy Dashboard")
 
 # --- Define Tabs
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📈 Trends", 
     "🚨 Data Quality", 
     "📄 Raw Data", 
-    "📊 Historical Trends"
+    "📊 Historical Trends",
+    "🔮 Forecast"
 ])
 
 # --- Tab 1: Trends Overview
@@ -110,4 +111,42 @@ with tab4:
         labels={"value": "Metric", "variable": "Type"},
         title=f"{city} Trends (last {days} days)"
     )
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- Tab 5: Forecasting
+with tab5:
+    st.header("🔮 Forecasting Energy Usage")
+
+    # Select city and forecast window
+    city = st.selectbox("Select City", df["city"].unique(), key="forecast_city")
+    days = st.slider("Days to Forecast", 7, 30, 14)
+
+    # Filter + prepare data
+    city_df = df[df["city"] == city].copy()
+    city_df["date"] = pd.to_datetime(city_df["date"])
+    city_df = city_df.sort_values("date")
+    city_df = city_df[["date", "energy_consumption"]].dropna()
+
+    # Create numeric date for regression
+    city_df["days_since"] = (city_df["date"] - city_df["date"].min()).dt.days
+
+    # Fit linear regression
+    from sklearn.linear_model import LinearRegression
+    model = LinearRegression()
+    model.fit(city_df[["days_since"]], city_df["energy_consumption"])
+
+    # Forecast future
+    future_days = pd.DataFrame({
+        "days_since": range(city_df["days_since"].max() + 1, city_df["days_since"].max() + days + 1)
+    })
+    future_days["date"] = city_df["date"].max() + pd.to_timedelta(
+        future_days["days_since"] - city_df["days_since"].max(), unit='d'
+    )
+    future_days["forecast"] = model.predict(future_days[["days_since"]])
+
+    # Plot
+    st.subheader(f"{city} Forecast for Next {days} Days")
+    fig = px.line()
+    fig.add_scatter(x=city_df["date"], y=city_df["energy_consumption"], name="Historical")
+    fig.add_scatter(x=future_days["date"], y=future_days["forecast"], name="Forecast")
     st.plotly_chart(fig, use_container_width=True)
