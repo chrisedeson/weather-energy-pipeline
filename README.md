@@ -26,35 +26,51 @@ A production-grade data pipeline and interactive dashboard for analyzing the rel
    git clone https://github.com/chrisedeson/weather-energy-pipeline.git
 
    cd weather-energy-pipeline
-    ```
+   ```
 
 2. **Create virtual environment**
-    ```bash
-    python -m venv .venv
-    
-    source .venv/bin/activate
-    ```
+   ```bash
+   python -m venv .venv
+
+   source .venv/bin/activate  # On Windows use .venv\Scripts\activate
+   ```
 
 3. **Install dependencies**
-    ```bash
-    pip install -r requirements.txt
-    ```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-4. **Run Streamlit app**
-    ```bash
-    streamlit run app.py
-    ```
+4. **Add .env file**  
+   Create a `.env` file using .env.example as a guide:
+   ```
+   NOAA_API_KEY=your_openweather_api_key
+   EIA_API_KEY=your_energy_api_key
+   ```
 
-## 🧪 **CI/CD**
+5. **Run Streamlit app**
+   ```bash
+   streamlit run dashboards/app.py
+   ```
 
-This project uses GitHub Actions for automatic daily data ingestion and quality checks. Workflow is defined in `.github/workflows/daily-pipeline.yml`.
+---
 
-## 📊 **Data**
+## 🧪 CI/CD
 
-Data is stored in the `data/` directory and auto-updated daily:
+This project uses GitHub Actions for automatic daily data ingestion and quality checks.  
+Workflow is defined in `.github/workflows/daily-pipeline.yml`.
 
-- `merged_data.csv`: main dataset
+It runs on:
+- Daily schedule at 12:00 UTC
+- Manual dispatch from GitHub UI
 
-- `quality_report.json`: summary of freshness and outliers
+---
 
-<!-- - `anomalies.csv`: detected anomalies -->
+## 📊 Data Files
+
+All updated daily into the `data/` folder:
+
+- `merged_data.csv`: Final cleaned dataset
+- `anomalies.csv`: Flagged anomalies via Isolation Forest
+- `quality_report.json`: Freshness + missing values report
+
+---
