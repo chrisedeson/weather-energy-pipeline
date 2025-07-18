@@ -74,3 +74,26 @@ All updated daily into the `data/` folder:
 - `quality_report.json`: Freshness + missing values report
 
 ---
+
+## 📦 Optional: Using Poetry for Dependency Management
+
+If you prefer using [Poetry](https://python-poetry.org/) for dependency and environment management:
+
+1. **Install Poetry**  
+   ```bash
+   curl -sSL https://install.python-poetry.org | python3 -
+   ```
+
+2. **Install dependencies**  
+   ```bash
+   poetry install
+   ```
+
+3. **Run the app**  
+   ```bash
+   poetry run streamlit run dashboards/app.py
+   ```
+
+Poetry uses `pyproject.toml` for managing dependencies and virtual environments. You can still use `pip` and `requirements.txt` if preferred.
+
+---
