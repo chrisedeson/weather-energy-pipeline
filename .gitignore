@@ -61,8 +61,9 @@ venv.bak/
 data/*
 
 # But keep these files
-!data/merged_data.csv
+!data/merged_data.parquet
 !data/quality_report.json
+!data/anomalies.csv
 
 # Log files
 logs/

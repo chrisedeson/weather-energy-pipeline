@@ -6,13 +6,13 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-DATA_PATH = Path("data/merged_data.csv")
+DATA_PATH = Path("data/merged_data.parquet")
 REPORT_PATH = Path("data/quality_report.json")
 
 def load_data():
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"Merged data file not found at {DATA_PATH}")
-    return pd.read_csv(DATA_PATH, parse_dates=["date"])
+    return pd.read_parquet(DATA_PATH)
 
 def check_missing_values(df):
     missing_report = df.isnull().sum().to_dict()

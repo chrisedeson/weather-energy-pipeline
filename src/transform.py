@@ -37,8 +37,8 @@ def merge_data():
     merged_df = pd.merge(weather_df, energy_df, on=["date", "city"], how="inner")
 
     merged_df.sort_values(by=["city", "date"], inplace=True)
-    output_file = MERGED_DIR / "merged_data.csv"
-    merged_df.to_csv(output_file, index=False)
+    output_file = MERGED_DIR / "merged_data.parquet"
+    merged_df.to_parquet(output_file, index=False)
     logger.info(f"Merged data saved to {output_file}")
 
 

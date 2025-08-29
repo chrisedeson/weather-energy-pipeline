@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.ensemble import IsolationForest
 from pathlib import Path
 
-INPUT_PATH = Path("data/merged_data.csv")
+INPUT_PATH = Path("data/merged_data.parquet")
 OUTPUT_PATH = Path("data/anomalies.csv")
 
 def detect_anomalies(df):
@@ -15,7 +15,7 @@ def detect_anomalies(df):
     return anomalies.drop(columns=["anomaly"])
 
 def main():
-    df = pd.read_csv(INPUT_PATH)
+    df = pd.read_parquet(INPUT_PATH)
     df["date"] = pd.to_datetime(df["date"])
     anomalies = detect_anomalies(df)
     anomalies.to_csv(OUTPUT_PATH, index=False)
