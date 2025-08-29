@@ -121,7 +121,7 @@ def render_forecasting_tab(df, selected_cities):
 
     # Add a vertical line to separate historical from forecast
     fig.add_vline(
-        x=last_date,
+        x=last_date.strftime('%Y-%m-%d'),  # Convert timestamp to string
         line_dash="dot",
         line_color="gray",
         annotation_text="Forecast Start",
