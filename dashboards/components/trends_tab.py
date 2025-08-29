@@ -17,21 +17,9 @@ def render_trends_tab(df, selected_cities):
         st.warning("No data available for selected cities.")
         return
 
-    # Section 1: Basic Trends
-    st.subheader("📈 Basic Trends Overview")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.line_chart(
-            data=filtered.groupby("date")[["avg_temp_f", "energy_consumption"]].mean(),
-            use_container_width=True
-        )
-
-    with col2:
-        st.bar_chart(
-            data=filtered.groupby("city")["energy_consumption"].mean().sort_values(),
-            use_container_width=True
-        )
+    # Section 1: Basic Trends - Removed duplicate charts
+    # Keeping the section header for navigation purposes but removing duplicate charts
+    # st.subheader("📈 Basic Trends Overview")
 
     # Section 2: Historical Trends
     st.subheader("📊 Detailed Historical Analysis")
