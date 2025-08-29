@@ -119,13 +119,17 @@ def render_forecasting_tab(df, selected_cities):
         )
     )
 
-    # Add a vertical line to separate historical from forecast
-    fig.add_vline(
-        x=last_date.strftime('%Y-%m-%d'),  # Convert timestamp to string
-        line_dash="dot",
-        line_color="gray",
-        annotation_text="Forecast Start",
-        annotation_position="top right"
+    # Add a vertical line to separate historical from forecast using scatter
+    fig.add_trace(
+        go.Scatter(
+            x=[last_date.strftime('%Y-%m-%d'), last_date.strftime('%Y-%m-%d')],
+            y=[combined_df['energy_consumption'].min(), combined_df['energy_consumption'].max()],
+            mode='lines',
+            line=dict(color='gray', dash='dot', width=2),
+            name='Forecast Start',
+            showlegend=True,
+            hovertemplate="Forecast begins<br>%{x}<extra></extra>"
+        )
     )
 
     # Enhance layout
