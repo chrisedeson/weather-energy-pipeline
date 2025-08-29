@@ -94,8 +94,35 @@ def render_data_quality_tab(df, selected_cities, report):
                 x="date",
                 y="count",
                 title="Anomaly Frequency Over Time",
-                labels={"count": "Number of Anomalies", "date": "Date"}
+                labels={"count": "Number of Anomalies", "date": "Date"},
+                markers=True  # Add markers to show individual data points
             )
+            
+            # Improve the visualization
+            fig_time.update_traces(
+                line=dict(width=3),
+                marker=dict(size=8, symbol="circle")
+            )
+            
+            # Add reference line for average
+            avg_anomalies = time_anomalies["count"].mean()
+            fig_time.add_hline(
+                y=avg_anomalies, 
+                line_dash="dash", 
+                line_color="rgba(255, 0, 0, 0.5)",
+                annotation_text=f"Avg: {avg_anomalies:.1f}"
+            )
+            
+            # Update layout for better readability
+            fig_time.update_layout(
+                yaxis=dict(
+                    title="Number of Anomalies",
+                    range=[0, max(time_anomalies["count"]) * 1.2],  # Add some space at top
+                    dtick=1  # Force integer ticks
+                ),
+                hovermode="x unified"
+            )
+            
             st.plotly_chart(fig_time, use_container_width=True)
 
             # Anomaly details table
