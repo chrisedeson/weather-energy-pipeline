@@ -12,34 +12,39 @@ DATA_URL = "https://raw.githubusercontent.com/chrisedeson/weather-energy-pipelin
 REPORT_URL = "https://raw.githubusercontent.com/chrisedeson/weather-energy-pipeline/master/data/quality_report.json"
 ANOMALIES_URL = "https://raw.githubusercontent.com/chrisedeson/weather-energy-pipeline/master/data/anomalies.csv"
 
-@st.cache_data
+@st.cache_data(ttl=5) # Short TTL to refresh data frequently
 def load_data():
     """Load main dataset with fallback options"""
     try:
-        # Try to load from GitHub first
-        github_df = pd.read_parquet(DATA_URL)
-        github_latest = github_df['date'].max()
-        st.info(f"📡 GitHub data: {len(github_df):,} records up to {github_latest.strftime('%Y-%m-%d')}")
-
-        # Check if local Parquet is fresher
+        # Priority: Use local Parquet file first (most up-to-date after running pipeline)
         local_parquet = Path("data/merged_data.parquet")
         if local_parquet.exists():
             try:
                 local_df = pd.read_parquet(local_parquet)
                 local_latest = local_df['date'].max()
-                st.info(f"💾 Local data: {len(local_df):,} records up to {local_latest.strftime('%Y-%m-%d')}")
-
-                # Use local data if it's fresher
-                if local_latest > github_latest:
-                    st.success(f"✅ Using fresher local data ({local_latest.strftime('%Y-%m-%d')} vs {github_latest.strftime('%Y-%m-%d')})")
-                    return local_df
-                else:
-                    st.info("✅ Using GitHub data (up to date)")
-                    return github_df
+                
+                # Check for negative values (safety check)
+                neg_count = len(local_df[local_df['energy_consumption'] < 0])
+                if neg_count > 0:
+                    st.warning(f"⚠️ Found {neg_count} negative energy values in local data. Using filtered data.")
+                    local_df = local_df[local_df['energy_consumption'] >= 0]
+                
+                st.success(f"✅ Using local data: {len(local_df):,} records up to {local_latest.strftime('%Y-%m-%d')}")
+                return local_df
             except Exception as pq_error:
                 st.warning(f"⚠️ Could not read local Parquet: {pq_error}")
-
-        # If no local data, use GitHub
+        
+        # Fallback: Try to load from GitHub if local fails
+        github_df = pd.read_parquet(DATA_URL)
+        
+        # Safety check for negative values in GitHub data too
+        neg_count = len(github_df[github_df['energy_consumption'] < 0])
+        if neg_count > 0:
+            st.warning(f"⚠️ Found {neg_count} negative energy values in GitHub data. Using filtered data.")
+            github_df = github_df[github_df['energy_consumption'] >= 0]
+        
+        github_latest = github_df['date'].max()
+        st.info(f"📡 Using GitHub data: {len(github_df):,} records up to {github_latest.strftime('%Y-%m-%d')}")
         return github_df
 
     except Exception as e:
