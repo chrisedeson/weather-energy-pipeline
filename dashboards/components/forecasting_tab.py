@@ -4,6 +4,7 @@ Forecasting Tab Component
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from utils.data_loader import get_filtered_data
@@ -55,6 +56,11 @@ def render_forecasting_tab(df, selected_cities):
 
     forecast_values = model.predict(forecast_days.reshape(-1, 1))
 
+    # Calculate confidence interval
+    std_dev = np.std(y)
+    upper_bound = forecast_values + 1.96 * std_dev
+    lower_bound = forecast_values - 1.96 * std_dev
+
     # Create forecast dataframe
     forecast_df = pd.DataFrame({
         "date": forecast_dates,
@@ -68,41 +74,171 @@ def render_forecasting_tab(df, selected_cities):
 
     combined_df = pd.concat([historical_df, forecast_df])
 
-    # Plot
-    fig = px.line(combined_df, x="date", y="energy_consumption", color="type",
-                  title=f"{city} Energy Consumption Forecast",
-                  labels={"energy_consumption": "Energy Consumption (MWh)", "date": "Date"})
+    # Create beautiful forecast visualization
+    fig = px.line(
+        combined_df,
+        x="date",
+        y="energy_consumption",
+        color="type",
+        title=f"🔮 {city} Energy Consumption Forecast",
+        labels={
+            "energy_consumption": "Energy Consumption (MWh)",
+            "date": "Date",
+            "type": "Data Type"
+        },
+        color_discrete_map={
+            "Historical": "#2E86AB",  # Professional blue
+            "Forecast": "#F24236"    # Vibrant red-orange
+        }
+    )
 
-    # Add confidence interval (simple approximation)
-    std_dev = np.std(y)
-    upper_bound = forecast_values + 1.96 * std_dev
-    lower_bound = forecast_values - 1.96 * std_dev
+    # Enhance the plot styling
+    fig.update_traces(
+        mode="lines+markers",
+        line=dict(width=3),
+        marker=dict(size=6, symbol="circle"),
+        hovertemplate="<b>%{fullData.name}</b><br>" +
+                     "Date: %{x|%Y-%m-%d}<br>" +
+                     "Consumption: %{y:.1f} MWh<br>" +
+                     "<extra></extra>"
+    )
 
-    fig.add_trace(px.line(x=forecast_dates, y=upper_bound).data[0].update(line=dict(dash='dash', color='lightgray')))
-    fig.add_trace(px.line(x=forecast_dates, y=lower_bound).data[0].update(line=dict(dash='dash', color='lightgray')))
+    # Add confidence interval as filled area
+    fig.add_trace(
+        go.Scatter(
+            x=list(forecast_dates) + list(forecast_dates)[::-1],
+            y=list(upper_bound) + list(lower_bound)[::-1],
+            fill='toself',
+            fillcolor='rgba(242, 66, 54, 0.2)',  # Light red with transparency
+            line=dict(color='rgba(255,255,255,0)'),
+            name='95% Confidence Interval',
+            showlegend=True,
+            hovertemplate="Confidence Interval<br>" +
+                         "Upper: %{y:.1f} MWh<br>" +
+                         "<extra></extra>"
+        )
+    )
+
+    # Add a vertical line to separate historical from forecast
+    fig.add_vline(
+        x=last_date,
+        line_dash="dot",
+        line_color="gray",
+        annotation_text="Forecast Start",
+        annotation_position="top right"
+    )
+
+    # Enhance layout
+    fig.update_layout(
+        height=500,
+        font=dict(family="Arial, sans-serif", size=12),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(
+            showgrid=True,
+            gridcolor='lightgray',
+            linecolor='lightgray',
+            tickformat="%b %d"
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='lightgray',
+            linecolor='lightgray',
+            title_font=dict(size=14)
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            bgcolor='rgba(255,255,255,0.8)',
+            bordercolor='lightgray',
+            borderwidth=1
+        ),
+        margin=dict(l=20, r=20, t=60, b=20)
+    )
+
+    # Add subtle styling
+    fig.update_xaxes(showline=True, linewidth=1, linecolor='lightgray', mirror=False)
+    fig.update_yaxes(showline=True, linewidth=1, linecolor='lightgray', mirror=False)
 
     st.plotly_chart(fig, use_container_width=True)
 
-    # Forecast metrics
-    col1, col2, col3 = st.columns(3)
+    # Enhanced Forecast metrics with better styling
+    st.subheader("📊 Forecast Analytics")
 
     avg_forecast = np.mean(forecast_values)
     trend = (forecast_values[-1] - forecast_values[0]) / days
+    accuracy_indicator = "High" if len(city_df) > 30 else "Medium" if len(city_df) > 15 else "Low"
+
+    # Create metrics in a more visually appealing layout
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.metric("Avg Daily Forecast", f"{avg_forecast:.1f} MWh")
+        st.metric(
+            "📈 Avg Daily Forecast",
+            f"{avg_forecast:.1f} MWh",
+            delta=f"{trend:+.2f} MWh/day",
+            delta_color="normal"
+        )
 
     with col2:
-        st.metric("Daily Trend", f"{trend:+.2f} MWh/day")
+        confidence_range = upper_bound[-1] - lower_bound[-1]
+        st.metric(
+            "🎯 Confidence Range",
+            f"±{confidence_range:.1f} MWh",
+            help="95% confidence interval width"
+        )
 
     with col3:
-        st.metric("Forecast Period", f"{days} days")
+        st.metric(
+            "📅 Forecast Period",
+            f"{days} days",
+            help=f"Forecasting from {forecast_dates[0].strftime('%Y-%m-%d')} to {forecast_dates[-1].strftime('%Y-%m-%d')}"
+        )
 
-    st.info(f"📈 **Forecast Summary for {city}:** Expected average daily consumption of {avg_forecast:.1f} MWh over the next {days} days with a {'positive' if trend > 0 else 'negative'} trend of {abs(trend):.2f} MWh per day.")
+    with col4:
+        st.metric(
+            "📊 Model Accuracy",
+            accuracy_indicator,
+            help=f"Based on {len(city_df)} historical data points"
+        )
 
-    # Forecast table
-    st.subheader("📋 Forecast Details")
+    # Enhanced summary with better formatting
+    trend_direction = "📈 increasing" if trend > 0 else "📉 decreasing"
+    confidence_level = "High" if confidence_range < np.mean(forecast_values) * 0.1 else "Medium"
+
+    st.success(
+        f"🔮 **Forecast Summary for {city}:**\n\n"
+        f"• Expected average daily consumption: **{avg_forecast:.1f} MWh**\n"
+        f"• Trend: **{trend_direction}** by {abs(trend):.2f} MWh/day\n"
+        f"• Confidence Level: **{confidence_level}**\n"
+        f"• Forecast Period: **{days} days** ({forecast_dates[0].strftime('%b %d')} - {forecast_dates[-1].strftime('%b %d')})"
+    )
+
+    # Enhanced forecast table with better formatting
+    st.subheader("📋 Detailed Forecast")
+
+    # Add some styling to the dataframe
     forecast_table = forecast_df.copy()
     forecast_table["date"] = forecast_table["date"].dt.strftime("%Y-%m-%d")
     forecast_table["energy_consumption"] = forecast_table["energy_consumption"].round(1)
-    st.dataframe(forecast_table, use_container_width=True)
+    forecast_table["confidence_lower"] = lower_bound.round(1)
+    forecast_table["confidence_upper"] = upper_bound.round(1)
+    forecast_table = forecast_table.rename(columns={
+        "energy_consumption": "Forecast (MWh)",
+        "confidence_lower": "Lower Bound",
+        "confidence_upper": "Upper Bound"
+    })
+
+    st.dataframe(
+        forecast_table,
+        use_container_width=True,
+        column_config={
+            "date": st.column_config.DateColumn("Date", format="MMM DD, YYYY"),
+            "Forecast (MWh)": st.column_config.NumberColumn("Forecast (MWh)", format="%.1f"),
+            "Lower Bound": st.column_config.NumberColumn("Lower Bound", format="%.1f"),
+            "Upper Bound": st.column_config.NumberColumn("Upper Bound", format="%.1f")
+        }
+    )
