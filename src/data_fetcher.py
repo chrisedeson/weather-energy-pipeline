@@ -102,4 +102,12 @@ def fetch_energy_data(city_config, start_date, end_date):
     df = df.rename(columns={"period": "date", "value": "energy_mwh"})
     df["city"] = city_name
 
-    return df
+    # 🔧 FIX: Filter to only use "Demand" data type (actual consumption, always positive)
+    demand_data = df[df["type-name"] == "Demand"].copy()
+
+    if len(demand_data) == 0:
+        logger.warning(f"No demand data found for {city_name}, using all data")
+        return df
+
+    logger.info(f"Filtered to {len(demand_data)} demand records for {city_name} (removed interchange/net generation data)")
+    return demand_data

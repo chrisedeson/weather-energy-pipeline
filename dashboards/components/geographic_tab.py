@@ -33,8 +33,12 @@ def render_geographic_tab(df, selected_cities):
     # Current metrics
     st.subheader("📍 Current City Metrics")
 
-    # Get latest data for each city
-    latest_data = filtered.sort_values("date").groupby("city").last().reset_index()
+    # Get latest data for each city - ensure no negative values are included
+    filtered_positive = filtered[filtered['energy_consumption'] >= 0].copy()
+    latest_data = filtered_positive.sort_values("date").groupby("city").last().reset_index()
+    
+    # Safety check - if we somehow still have negative values, replace with absolute value
+    latest_data['energy_consumption'] = latest_data['energy_consumption'].abs()
 
     # Create metrics cards
     cols = st.columns(len(latest_data))
@@ -99,14 +103,35 @@ def render_geographic_tab(df, selected_cities):
 
     # Energy consumption comparison
     fig_energy = px.bar(
-        latest_data,
+        latest_data.sort_values('energy_consumption', ascending=False),
         x="city",
         y="energy_consumption",
-        title="Current Energy Consumption by City",
+        title="Current Energy Consumption by City (Demand Data)",
         labels={"energy_consumption": "Energy Consumption (MWh)", "city": "City"},
         color="energy_consumption",
-        color_continuous_scale="Blues"
+        color_continuous_scale="Blues",
+        text="energy_consumption"  # Add values as text labels
     )
+    
+    # Customize layout for better readability
+    fig_energy.update_traces(
+        texttemplate='%{text:,.0f} MWh',
+        textposition='outside',
+        marker_line_width=1,
+        marker_line_color='rgba(255, 255, 255, 0.3)'
+    )
+    
+    # Update layout
+    fig_energy.update_layout(
+        yaxis_title="Energy Consumption (MWh)",
+        xaxis_title="City",
+        xaxis={'categoryorder': 'total descending'},  # Sort by value
+        hovermode='x unified',
+        hoverlabel=dict(bgcolor="white", font_size=14),
+        plot_bgcolor='rgba(0,0,0,0.1)',
+        bargap=0.2
+    )
+    
     st.plotly_chart(fig_energy, use_container_width=True)
 
     # Summary statistics
