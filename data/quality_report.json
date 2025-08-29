@@ -8,11 +8,11 @@
   },
   "outliers": {
     "temperature_outliers": 0,
-    "negative_energy_readings": 1504
+    "negative_energy_readings": 1691
   },
   "freshness": {
-    "latest_date": "2025-07-13",
+    "latest_date": "2025-08-27",
     "is_fresh": false,
-    "days_old": 4
+    "days_old": 2
   }
 }
