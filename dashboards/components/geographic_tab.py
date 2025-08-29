@@ -51,7 +51,8 @@ def render_geographic_tab(df, selected_cities):
 
     # Prepare data for map
     map_data = latest_data.copy()
-    map_data["size"] = map_data["energy_consumption"] / 100  # Scale for visualization
+    # Ensure size values are non-negative and scaled appropriately
+    map_data["size"] = (map_data["energy_consumption"].abs() / 100).clip(lower=0.1)
 
     fig = px.scatter_mapbox(
         map_data,
