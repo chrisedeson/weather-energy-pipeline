@@ -1,167 +1,83 @@
+"""
+Main Streamlit Dashboard Application
+Orchestrates all dashboard components in a modular structure
+"""
 import streamlit as st
 import pandas as pd
-import json
-from pathlib import Path
-import plotly.express as px
-from sklearn.linear_model import LinearRegression
+from utils.data_loader import load_data, load_quality_report
+from components.trends_tab import render_trends_tab
+from components.forecasting_tab import render_forecasting_tab
+from components.geographic_tab import render_geographic_tab
+from components.data_quality_tab import render_data_quality_tab
+from components.raw_data_tab import render_raw_data_tab
 
-st.set_page_config(page_title="US Weather + Energy Dashboard", layout="wide")
+# ---- Page Configuration
+st.set_page_config(
+    page_title="US Weather + Energy Dashboard",
+    layout="wide",
+    page_icon="🔌"
+)
 
-# ---- Paths
-DATA_PATH = Path("data/merged_data.csv")
-REPORT_PATH = Path("data/quality_report.json")
+def main():
+    """Main dashboard application"""
+    st.title("🔌 US Weather + Energy Dashboard")
 
-# ---- Loaders
-@st.cache_data
-def load_data():
-    return pd.read_csv(DATA_PATH, parse_dates=["date"])
+    # ---- Load Data
+    with st.spinner("Loading data..."):
+        df = load_data()
+        report = load_quality_report()
 
-@st.cache_data
-def load_quality_report():
-    if REPORT_PATH.exists():
-        with open(REPORT_PATH) as f:
-            return json.load(f)
-    return {}
+    if df.empty:
+        st.error("❌ Unable to load data. Please check your data pipeline.")
+        return
 
-# ---- Load
-st.title("🔌 US Weather + Energy Dashboard")
-df = load_data()
-report = load_quality_report()
+    # ---- Sidebar Filters
+    st.sidebar.header("🎛️ Filters")
 
-# ---- Sidebar Filter
-st.sidebar.header("Filter")
-cities = df["city"].unique().tolist()
-selected_cities = st.sidebar.multiselect("Cities", cities, default=cities)
-filtered = df[df["city"].isin(selected_cities)]
-
-# ---- Tabs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "📈 Trends", "📊 Historical Trends", "🔮 Forecast", "🚨 Data Quality", "🔍 Anomalies", "📄 Raw Data"
-])
-
-# --- Tab 1: Trends
-with tab1:
-    st.subheader("Energy vs. Temperature")
-
-    st.line_chart(
-        data=filtered.groupby("date")[["avg_temp_f", "energy_consumption"]].mean(),
-        use_container_width=True
+    # City selection
+    cities = sorted(df["city"].unique().tolist())
+    selected_cities = st.sidebar.multiselect(
+        "Select Cities",
+        cities,
+        default=cities,
+        help="Choose cities to include in the analysis"
     )
 
-    st.bar_chart(
-        data=filtered.groupby("city")["energy_consumption"].mean().sort_values(),
-        use_container_width=True
-    )
+    # Data info in sidebar
+    st.sidebar.header("📊 Data Info")
+    st.sidebar.metric("Total Records", len(df))
+    st.sidebar.metric("Cities Available", len(cities))
+    st.sidebar.metric("Date Range", f"{df['date'].min()} to {df['date'].max()}")
 
-    st.download_button(
-        "⬇️ Download Filtered CSV", 
-        data=filtered.to_csv(index=False).encode(),
-        file_name="filtered_data.csv",
-        mime="text/csv"
-    )
+    # ---- Main Content Tabs
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📊 Trends & Analysis",
+        "🔮 Forecasting",
+        "🗺️ Geographic",
+        "🚨 Data Quality",
+        "📄 Raw Data"
+    ])
 
-# --- Tab 2: Historical Trends
-with tab2:
-    st.header("📊 Historical Trends")
+    # ---- Render Each Tab
+    with tab1:
+        render_trends_tab(df, selected_cities)
 
-    city = st.selectbox("Select City", df['city'].unique(), key="hist_city")
-    days = st.selectbox("Select Time Range", [7, 30, 90], key="hist_days")
+    with tab2:
+        render_forecasting_tab(df, selected_cities)
 
-    city_data = df[df["city"] == city].copy()
-    city_data["date"] = pd.to_datetime(city_data["date"])
-    latest_date = city_data["date"].max()
-    start_date = latest_date - pd.Timedelta(days=days)
-    city_data = city_data[city_data["date"] >= start_date]
+    with tab3:
+        render_geographic_tab(df, selected_cities)
 
-    st.subheader(f"Avg Temp & Energy Usage - Last {days} Days in {city}")
-    fig = px.line(city_data, x="date", y=["avg_temp_f", "energy_consumption"],
-                  labels={"value": "Metric", "variable": "Type"},
-                  title=f"{city} Trends")
-    st.plotly_chart(fig, use_container_width=True)
+    with tab4:
+        render_data_quality_tab(df, selected_cities, report)
 
-# --- Tab 3: Forecast
-with tab3:
-    st.header("🔮 Forecasting Energy Usage")
+    with tab5:
+        render_raw_data_tab(df, selected_cities)
 
-    city = st.selectbox("Select City", df["city"].unique(), key="forecast_city")
-    days = st.slider("Days to Forecast", 7, 30, 14)
+    # ---- Footer
+    st.markdown("---")
+    st.markdown("*Dashboard last updated: Data refreshes monthly on the 1st*")
+    st.markdown("*Built with Streamlit, Pandas, and Plotly*")
 
-    city_df = df[df["city"] == city].copy()
-    city_df["date"] = pd.to_datetime(city_df["date"])
-    city_df = city_df.sort_values("date")
-    city_df = city_df[["date", "energy_consumption"]].dropna()
-
-    city_df["days_since"] = (city_df["date"] - city_df["date"].min()).dt.days
-    model = LinearRegression()
-    model.fit(city_df[["days_since"]], city_df["energy_consumption"])
-
-    future_days = pd.DataFrame({
-        "days_since": range(
-            city_df["days_since"].max() + 1,
-            city_df["days_since"].max() + days + 1
-        )
-    })
-    future_days["date"] = city_df["date"].max() + pd.to_timedelta(
-        future_days["days_since"] - city_df["days_since"].max(), unit='d'
-    )
-    future_days["forecast"] = model.predict(future_days[["days_since"]])
-
-    st.subheader(f"{city} Forecast for Next {days} Days")
-    fig = px.line()
-    fig.add_scatter(x=city_df["date"], y=city_df["energy_consumption"], name="Historical")
-    fig.add_scatter(x=future_days["date"], y=future_days["forecast"], name="Forecast")
-    st.plotly_chart(fig, use_container_width=True)
-
-# --- Tab 4: Data Quality
-with tab4:
-    st.subheader("📋 Data Quality Report")
-
-    if report:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("📆 Latest Date", report["freshness"]["latest_date"])
-            st.metric("📦 Is Fresh?", str(report["freshness"]["is_fresh"]))
-            st.metric("📉 Days Old", report["freshness"]["days_old"])
-
-        with col2:
-            st.metric("❌ Temp Outliers", report["outliers"]["temperature_outliers"])
-            st.metric("❌ Negative Energy", report["outliers"]["negative_energy_readings"])
-
-        st.json(report["missing_values"], expanded=False)
-    else:
-        st.warning("No quality report found.")
-
-# --- Tab 5: Anomalies
-with tab5:
-    st.header("🔍 Anomaly Detection")
-
-    df_anomalies = df[
-        (df["energy_consumption"] < 0) |
-        (df["avg_temp_f"] < -50) | (df["avg_temp_f"] > 130)
-    ]
-
-    if df_anomalies.empty:
-        st.success("✅ No anomalies detected in temperature or energy values.")
-    else:
-        st.error(f"⚠️ {len(df_anomalies)} anomaly rows detected.")
-        st.dataframe(df_anomalies, use_container_width=True)
-        st.download_button(
-            "⬇️ Download Anomalies CSV", 
-            data=df_anomalies.to_csv(index=False).encode(),
-            file_name="anomalies.csv",
-            mime="text/csv"
-        )
-
-# --- Tab 6: Raw Data
-with tab6:
-    st.subheader("📄 Full Data Table")
-    st.dataframe(filtered, use_container_width=True)
-
-    # Download CSV
-    csv = filtered.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label="📥 Download Full CSV",
-        data=csv,
-        file_name="weather_energy_data.csv",
-        mime="text/csv",
-    )
+if __name__ == "__main__":
+    main()

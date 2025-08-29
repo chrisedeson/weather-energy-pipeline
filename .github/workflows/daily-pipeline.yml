@@ -1,9 +1,9 @@
-name: Daily Data Pipeline
+name: Monthly Data Pipeline
 
 on:
   schedule:
-    - cron: "0 12 * * *"  # Runs daily at 12:00 UTC
-  workflow_dispatch:  # Allows manual triggering from GitHub UI
+    - cron: "0 12 1 * *" # Runs monthly on the 1st at 12:00 UTC
+  workflow_dispatch: # Allows manual triggering from GitHub UI
 
 jobs:
   run-pipeline:
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
@@ -30,6 +30,9 @@ jobs:
       - name: Run Data Pipeline
         run: python src/pipeline.py
 
+      - name: Transform Data
+        run: python src/transform.py
+
       - name: Run Quality Check
         run: python src/data_quality.py
 
@@ -41,4 +44,4 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git diff --quiet && echo "✅ No changes to commit" || (git commit -m "🔄 Daily data update" && git push)
+          git diff --quiet && echo "✅ No changes to commit" || (git commit -m "🔄 Monthly data update" && git push)
