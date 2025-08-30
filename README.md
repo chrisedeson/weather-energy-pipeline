@@ -6,6 +6,8 @@ A production-grade data pipeline and interactive dashboard for analyzing the rel
 
 🔗 **Live Demo:** [weather-energy-pipeline.streamlit.app](https://weather-energy-pipeline.streamlit.app/)
 
+🎥 **Video Walkthrough:** [Watch on YouTube](https://youtu.be/Ky0yjNRjG7o)
+
 ---
 
 ## 🚀 Features
