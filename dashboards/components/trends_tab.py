@@ -4,6 +4,8 @@ Trends & Analysis Tab Component
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import numpy as np
 from utils.data_loader import get_filtered_data
 
@@ -36,9 +38,50 @@ def render_trends_tab(df, selected_cities):
         start_date = latest_date - pd.Timedelta(days=days)
         city_data = city_data[city_data["date"] >= start_date]
 
-        fig = px.line(city_data, x="date", y=["avg_temp_f", "energy_consumption"],
-                      labels={"value": "Metric", "variable": "Type"},
-                      title=f"{city} Trends - Last {days} Days")
+        # Create dual y-axis chart for better visualization
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+        # Add temperature trace (primary y-axis)
+        fig.add_trace(
+            go.Scatter(
+                x=city_data["date"],
+                y=city_data["avg_temp_f"],
+                name="Avg Temperature (°F)",
+                line=dict(color="orange", width=2)
+            ),
+            secondary_y=False
+        )
+
+        # Add energy consumption trace (secondary y-axis)
+        fig.add_trace(
+            go.Scatter(
+                x=city_data["date"],
+                y=city_data["energy_consumption"],
+                name="Energy Consumption (MWh)",
+                line=dict(color="blue", width=2)
+            ),
+            secondary_y=True
+        )
+
+        # Update layout with proper titles and axis labels
+        fig.update_layout(
+            title_text=f"{city} – Avg Temperature (°F) vs. Energy Consumption (MWh), Last {days} Days",
+            title_x=0.5,
+            height=500,  # Give the chart more vertical space
+            margin=dict(l=50, r=50, t=80, b=120),  # Add margins for better spacing
+            legend=dict(
+                orientation="h",  # Horizontal legend
+                yanchor="bottom",
+                y=-0.25,  # Position below the chart
+                xanchor="center",
+                x=0.5  # Center the legend
+            )
+        )
+
+        # Update y-axes titles
+        fig.update_yaxes(title_text="Temperature (°F)", secondary_y=False)
+        fig.update_yaxes(title_text="Energy Consumption (MWh)", secondary_y=True)
+
         st.plotly_chart(fig, use_container_width=True)
 
     # Section 3: Correlation Analysis
