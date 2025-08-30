@@ -51,7 +51,7 @@ def render_geographic_tab(df, selected_cities):
             )
 
     # Map visualization
-    st.subheader("🗺️ Interactive Map")
+    st.subheader("Interactive Map")
 
     # Prepare data for map
     map_data = latest_data.copy()

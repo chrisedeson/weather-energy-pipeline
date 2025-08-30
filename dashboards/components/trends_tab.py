@@ -24,7 +24,7 @@ def render_trends_tab(df, selected_cities):
     # st.subheader("📈 Basic Trends Overview")
 
     # Section 2: Historical Trends
-    st.subheader("📊 Detailed Historical Analysis")
+    st.subheader("Detailed Historical Analysis")
 
     hist_col1, hist_col2 = st.columns([1, 2])
     with hist_col1:

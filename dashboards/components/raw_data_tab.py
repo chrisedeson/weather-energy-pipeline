@@ -17,7 +17,7 @@ def render_raw_data_tab(df, selected_cities):
         return
 
     # Data overview
-    st.subheader("📊 Dataset Overview")
+    st.subheader("Dataset Overview")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -108,7 +108,7 @@ def render_raw_data_tab(df, selected_cities):
     st.dataframe(filtered.head(preview_rows), use_container_width=True)
 
     # Export options
-    st.subheader("💾 Export Options")
+    st.subheader("Export Options")
 
     col1, col2, col3 = st.columns(3)
 

@@ -80,7 +80,7 @@ def render_forecasting_tab(df, selected_cities):
         x="date",
         y="energy_consumption",
         color="type",
-        title=f"🔮 {city} Energy Consumption Forecast",
+        title=f"{city} Energy Consumption Forecast",
         labels={
             "energy_consumption": "Energy Consumption (MWh)",
             "date": "Date",
